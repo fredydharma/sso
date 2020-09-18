@@ -1,0 +1,80 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>sg.nets.com</groupId>
+  <artifactId>nets</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>nets</name>
+  <packaging>jar</packaging>
+  
+  <properties>
+  	<java.version>1.8</java.version>
+  	<version.keycloak>9.0.3</version.keycloak>
+  	<version.jboss>3.3.0.Final</version.jboss>
+  	<version.jboss-ejb-api>1.0.0.Final</version.jboss-ejb-api>
+  	<jboss.logging.version>3.4.1.Final</jboss.logging.version>
+  </properties>
+  
+  <dependencies>
+  	<!-- Custom -->
+  	<dependency>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-core-asl</artifactId>
+         <version>1.9.13</version>
+         <scope>compile</scope> <!-- CHANGE HERE -->
+     </dependency>     
+     <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20190722</version>
+        </dependency>
+    <!-- End Custom -->   
+  	
+  	<dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-core</artifactId>
+        <version>${version.keycloak}</version>
+     <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-server-spi</artifactId>
+        <version>${version.keycloak}</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-server-spi-private</artifactId>
+        <version>${version.keycloak}</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss.logging.version}</version>
+        <scope>provided</scope>
+    </dependency>
+	<dependency>		
+          <groupId>org.keycloak</groupId>
+          <artifactId>keycloak-services</artifactId>
+          <version>${version.keycloak}</version>
+          <scope>provided</scope>
+      </dependency>
+  </dependencies>
+  
+  <build>
+  	<finalName>nets</finalName>
+      <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                  <source>8</source>
+                  <target>8</target>
+              </configuration>
+          </plugin>
+      </plugins>
+  </build>
+  
+</project>
