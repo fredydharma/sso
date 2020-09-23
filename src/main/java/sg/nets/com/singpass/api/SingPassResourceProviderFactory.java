@@ -10,7 +10,7 @@ public class SingPassResourceProviderFactory  implements RealmResourceProviderFa
 
 	@Override
 	public RealmResourceProvider create(KeycloakSession session) {
-		return new SingPassResourceProvider(session);
+		return new SingPassResourceProvider();
 	}
 
 	@Override

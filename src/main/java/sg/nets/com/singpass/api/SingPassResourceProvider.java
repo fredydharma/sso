@@ -1,19 +1,15 @@
 package sg.nets.com.singpass.api;
 
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 
 public class SingPassResourceProvider implements RealmResourceProvider{
 	
-	private KeycloakSession session;
-	
-	public SingPassResourceProvider(KeycloakSession session) {
-        this.session = session;
-    }
+	public SingPassResourceProvider() {		
+	}
 	
 	@Override
 	public Object getResource() {
-		return new SingPassResource(session);
+		return new SingPassResource();
 	}
 	
 	@Override
