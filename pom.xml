@@ -18,17 +18,17 @@
   <dependencies>
   	<!-- Custom -->
   	<dependency>
-         <groupId>org.codehaus.jackson</groupId>
-         <artifactId>jackson-core-asl</artifactId>
-         <version>1.9.13</version>
-         <scope>compile</scope> <!-- CHANGE HERE -->
-     </dependency>     
-     <!-- https://mvnrepository.com/artifact/org.json/json -->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20190722</version>
-        </dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-core-asl</artifactId>
+        <version>1.9.13</version>
+        <scope>compile</scope> <!-- CHANGE HERE -->
+    </dependency>     
+    <!-- https://mvnrepository.com/artifact/org.json/json -->
+    <!--dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>20190722</version>
+    </dependency-->
     <!-- End Custom -->   
   	
   	<dependency>

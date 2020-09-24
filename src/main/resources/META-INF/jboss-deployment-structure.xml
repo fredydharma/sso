@@ -6,7 +6,6 @@
             <module name="org.keycloak.keycloak-core" export="true"/>
             <module name="org.jboss.logging" export="true"/>
             <module name="org.keycloak.keycloak-services" export="true"/>
-            <module name="org.json.json" />
         </dependencies>
     </deployment>
 </jboss-deployment-structure>
