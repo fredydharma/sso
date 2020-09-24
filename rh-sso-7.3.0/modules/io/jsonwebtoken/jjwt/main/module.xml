@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<module xmlns="urn:jboss:module:1.1" name="io.jsonwebtoken.jjwt">
+
+    <resources>
+        <resource-root path="jjwt-0.9.1.jar"/>
+    </resources>
+
+    <dependencies>
+        <module name="com.fasterxml.jackson.core.jackson-databind"/>
+        <module name="javax.xml.bind"/>
+    </dependencies>
+</module>
