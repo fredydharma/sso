@@ -34,7 +34,7 @@ public class RegistrationPagePrefill extends RegistrationPage{
     @Override
     public String getDisplayType() {
         return "Registration Page Prefill";
-    }	
+    }
 
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;

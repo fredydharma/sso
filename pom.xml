@@ -61,7 +61,7 @@
           <version>${version.keycloak}</version>
           <scope>provided</scope>
       </dependency>
-  </dependencies>
+    </dependencies>
   
   <build>
   	<finalName>nets</finalName>
