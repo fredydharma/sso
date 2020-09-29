@@ -1,12 +1,6 @@
 package sg.nets.com.singpass.api;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Properties;
 
 import javax.ws.rs.POST;
@@ -18,32 +12,34 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+
 import sg.nets.com.singpass.model.AuthResponse;
 import sg.nets.com.singpass.model.Person;
 import sg.nets.com.singpass.util.Config;
 import sg.nets.com.singpass.util.FullResponseBuilder;
+import sg.nets.com.singpass.util.Security;
 
 public class SingPassResource {
 
 	private static final Logger logger = Logger.getLogger(SingPassResource.class);
 	private Config config;
+	private Security security; 
 	private Properties properties;
     
 	public SingPassResource() {    
     	this.config = new Config();
     	this.properties = config.getProperties();
+    	this.security = new Security();
     }
         
     @POST
     @Produces("application/json")
-    public Response getPerson(String code) throws IOException {      	    	
+    public Response getPersonData(String code) throws IOException {      	    	
     	
     	AuthResponse authResponse = createTokenRequest(code);    	    	
     	
@@ -56,9 +52,9 @@ public class SingPassResource {
     		
     		logger.info("Access Token: "+authResponse.getAccess_token());
     		
-    		String body = decodeJwt(authResponse.getAccess_token());    		
-    		Person data = createPersonRequest(body,authResponse.getAccess_token());
-            builder = Response.ok(data);
+    		/*String body = security.decodeJwt(authResponse.getAccess_token(), config.getPublicCert());    		
+    		Person data = createPersonRequest(body,authResponse.getAccess_token());*/
+            builder = Response.ok(new Person());
     	}  	    	               
                 
         builder.header("Access-Control-Allow-Origin", "*");
@@ -68,34 +64,7 @@ public class SingPassResource {
                 "Access-Control-Allow-Headers",
                 "X-Requested-With,Host,User-Agent,Accept,Accept-Language,Accept-Encoding,Accept-Charset,Keep-Alive,Connection,Referer,Origin");
         return builder.build();
-    }
-    
-    private String decodeJwt(String accessToken) {
-    	
-    	logger.info(config.getSslDir());
-    	
-    	PublicKey key = null;
-    	
-    	try {
-	    	CertificateFactory fact = CertificateFactory.getInstance("X.509");
-	    	FileInputStream is = new FileInputStream (config.getSslDir());
-	    	X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
-	    	key = cer.getPublicKey();
-    	}catch(CertificateException e) {
-    		e.printStackTrace();
-    	}catch(FileNotFoundException e) {
-    		e.printStackTrace();
-    	}    	    
-    	
-    	Claims body = Jwts.parser().setSigningKey(key).parseClaimsJws(accessToken).getBody();
-
-		System.out.println("Issuer     : " + body.getIssuer());
-		System.out.println("Subject    : " + body.getSubject());
-		System.out.println("Expiration : " + body.getExpiration());
-		logger.info(body.toString());
-		
-		return body.getSubject();		
-    }
+    }        
     
     private Person createPersonRequest(String sub,String accessToken) {
     	
@@ -105,9 +74,11 @@ public class SingPassResource {
     		
     		String apiPerson = properties.getProperty("MYINFO_API_PERSON")+"/"+sub+"/";
     		
+    		logger.info("Attributes: "+properties.getProperty("MYINFO_ATTRIBUTES"));
+    		
     		HttpUrl.Builder urlBuilder = HttpUrl.parse(apiPerson).newBuilder();
     		urlBuilder.addQueryParameter("client_id", properties.getProperty("MYINFO_APP_CLIENT_ID"));
-    		urlBuilder.addQueryParameter("attributes", properties.getProperty("SINGPASS_ATTRIBUTES"));
+    		urlBuilder.addQueryParameter("attributes", properties.getProperty("MYINFO_ATTRIBUTES"));
     		String url = urlBuilder.build().toString();
     		
     		OkHttpClient client = new OkHttpClient().newBuilder()
@@ -142,24 +113,28 @@ public class SingPassResource {
     
     private AuthResponse createTokenRequest(String code) {
     	
-    	AuthResponse authResponse = new AuthResponse();
+    	AuthResponse authResponse = new AuthResponse();    	    					
+    	
+    	String method = "POST";    	
+    	String content = "grant_type=authorization_code&"
+				+ "code="+code+"&"
+				+ "redirect_uri="+properties.getProperty("MYINFO_APP_REDIRECT_URL")+"&"
+				+ "client_id="+properties.getProperty("MYINFO_APP_CLIENT_ID")+"&"
+				+ "client_secret="+properties.getProperty("MYINFO_APP_CLIENT_SECRET");    	   
     	
     	try {
-    		
-    		String content = "grant_type=authorization_code&"
-    				+ "code="+code+"&"
-    				+ "redirect_uri="+properties.getProperty("MYINFO_APP_REDIRECT_URL")+"&"
-    				+ "client_id="+properties.getProperty("MYINFO_APP_CLIENT_ID")+"&"
-    				+ "client_secret="+properties.getProperty("MYINFO_APP_CLIENT_SECRET")+"";
-    		
+    	
     		MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
-    		RequestBody body = RequestBody.create(content,mediaType);    		    		    		
+    		RequestBody body = RequestBody.create(content,mediaType);
+    		
+    		String authorization = security.generateSHA256withRSAHeader(properties.getProperty("MYINFO_API_TOKEN"), content, method, "application/x-www-form-urlencoded", properties.getProperty("MYINFO_APP_CLIENT_ID"), config.getPrivateKey(), properties.getProperty("MYINFO_APP_CLIENT_SECRET"),config.getSslDir()+"\\stg-demoapp-client-publiccert-2018.pem");
     		
     		OkHttpClient client = new OkHttpClient().newBuilder()
     			  .build();
     			Request request = new Request.Builder()
     			  .url(properties.getProperty("MYINFO_API_TOKEN"))    			  
-    			  .method("POST", body)    			  
+    			  .method(method, body)
+    			  .addHeader("Authorization", authorization)
     			  .addHeader("Cache-Control", "no-cache")
     			  .addHeader("Content-Type", "application/x-www-form-urlencoded")    			  
     			  .build();
@@ -172,7 +147,7 @@ public class SingPassResource {
     			
     	}catch(IOException e) {
     		e.printStackTrace();
-    	}
+    	}    	    	
     	
     	return authResponse;
     }
@@ -215,18 +190,5 @@ public class SingPassResource {
 		}
     	
     	return authResponse;
-    }*/
-    
-    /*@GET
-   	@Produces({ "application/json" })
-    public Response checkPerson(@QueryParam("code") String code) throws IOException, JSONException {
-    	SingPass data = new SingPass();
-        data.setFirstname( "Fredy" );
-        data.setLastname( "Kusumah" );
-        data.setEmail( "kusumah.dharma@izeno.com	" );
-        data.setBirthdate( "09/10/1989" );
-
-        data.setCode( code );
-        return Response.ok( data ).build();
-    }*/
+    }*/        
 }

@@ -11,7 +11,8 @@
             <module name="io.jsonwebtoken.jjwt"/>
             <module name="com.squareup.okhttp3.okhttp"/>
             <module name="org.jetbrains.kotlin.kotlin-stdlib"/>
-            <module name="com.squareup.okio.okio"/>            
+            <module name="com.squareup.okio.okio"/>
+            <module name="commons-codec.commons-codec"/>
         </dependencies>
     </deployment>
 </jboss-deployment-structure>

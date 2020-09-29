@@ -1,10 +1,20 @@
 package sg.nets.com.singpass.util;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Map;
 
-public class ParameterStringBuilder {
+import org.apache.http.client.utils.URIBuilder;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import sg.nets.com.singpass.model.AuthParam;
+
+public final class ParameterStringBuilder {
     public static String getParamsString(Map<String, String> params) 
       throws UnsupportedEncodingException{
         StringBuilder result = new StringBuilder();
@@ -20,5 +30,42 @@ public class ParameterStringBuilder {
         return resultString.length() > 0
           ? resultString.substring(0, resultString.length() - 1)
           : resultString;
+    }
+    
+    public static String paramToJson(String paramIn) {
+        paramIn = paramIn.replaceAll("=", "\":\"");
+        paramIn = paramIn.replaceAll("&", "\",\"");
+        return "{\"" + paramIn + "\"}";
+    }
+    
+    public static String jsonToParam(String paramIn) {
+        paramIn = paramIn.replaceAll("\":\"", "=");
+        paramIn = paramIn.replaceAll("\",\"", "&");
+        return paramIn.substring(2,paramIn.length()-2);        
+    }
+    
+    @SuppressWarnings("unchecked")
+	public static String constractFormulatedBaseString(String url,String params, String method,long nonce,long timestamp,String appId) throws JsonMappingException, JsonParseException, IOException{
+    	
+    	String json = ParameterStringBuilder.paramToJson(params);		
+		
+		ObjectMapper mapper = new ObjectMapper();
+		AuthParam sortParam = mapper.readValue(json, AuthParam.class);
+		sortParam.setAppId(appId);
+		sortParam.setNonce(nonce);
+		sortParam.setTimestamp(timestamp);
+		sortParam.setSignatureMethod("RS256");
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		URIBuilder ub = new URIBuilder();
+        Map<String, Object> map =
+                objectMapper.convertValue(
+                		sortParam, Map.class);               
+		        
+        map.entrySet().stream().forEach(e -> ub.addParameter(e.getKey(),e.getValue().toString()));
+        
+        String baseString = method.toUpperCase() + "&" + url + "&" + URLDecoder.decode(ub.toString().substring(1),"UTF-8");
+        
+		return baseString;
     }
 }

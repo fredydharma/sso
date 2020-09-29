@@ -15,7 +15,7 @@ import okhttp3.Response;
 import sg.nets.com.singpass.model.AuthResponse;
 import sg.nets.com.singpass.model.Person;
 
-public class FullResponseBuilder {
+public final class FullResponseBuilder {
 	
 	public static String getFullResponse(HttpURLConnection con) throws IOException {
         StringBuilder fullResponseBuilder = new StringBuilder();
