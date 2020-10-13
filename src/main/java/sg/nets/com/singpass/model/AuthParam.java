@@ -20,6 +20,8 @@ public class AuthParam implements Serializable{
 	
 	@JsonProperty("client_id")
 	private String clientId;
+		
+	private String attributes;
 	
 	@JsonProperty("client_secret")
 	private String clientSecret;
@@ -36,14 +38,17 @@ public class AuthParam implements Serializable{
 	private long timestamp;
 	
 	public AuthParam() {		
-	}		
+	}			
 
-	public AuthParam(String grantType, String code, String redirectUri, String clientId, String appId, long nonce,
-			String signatureMethod, long timestamp) {		
+	public AuthParam(String grantType, String code, String redirectUri, String clientId, String attributes,
+			String clientSecret, String appId, long nonce, String signatureMethod, long timestamp) {
+		super();
 		this.grantType = grantType;
 		this.code = code;
 		this.redirectUri = redirectUri;
 		this.clientId = clientId;
+		this.attributes = attributes;
+		this.clientSecret = clientSecret;
 		this.appId = appId;
 		this.nonce = nonce;
 		this.signatureMethod = signatureMethod;
@@ -120,12 +125,20 @@ public class AuthParam implements Serializable{
 
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
+	}		
+
+	public String getAttributes() {
+		return attributes;
+	}
+
+	public void setAttributes(String attributes) {
+		this.attributes = attributes;
 	}
 
 	@Override
 	public String toString() {
 		return "AuthParam [grantType=" + grantType + ", code=" + code + ", redirectUri=" + redirectUri + ", clientId="
-				+ clientId + ", clientSecret=" + clientSecret + ", appId=" + appId + ", nonce=" + nonce
-				+ ", signatureMethod=" + signatureMethod + ", timestamp=" + timestamp + "]";
-	}		
+				+ clientId + ", attributes=" + attributes + ", clientSecret=" + clientSecret + ", appId=" + appId
+				+ ", nonce=" + nonce + ", signatureMethod=" + signatureMethod + ", timestamp=" + timestamp + "]";
+	}
 }

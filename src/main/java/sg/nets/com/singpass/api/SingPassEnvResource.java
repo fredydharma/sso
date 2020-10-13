@@ -7,6 +7,7 @@ import java.util.Properties;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.jboss.logging.Logger;
 
@@ -48,6 +49,14 @@ public class SingPassEnvResource {
 		
 		logger.info(json);
 		
-        return Response.ok( json ).build();
+		ResponseBuilder builder = Response.ok( json );
+		builder.header("Access-Control-Allow-Origin", "*");
+        builder.header("Access-Control-Max-Age", "3600");
+        builder.header("Access-Control-Allow-Methods", "*");
+        builder.header(
+                "Access-Control-Allow-Headers",
+                "X-Requested-With,Host,User-Agent,Accept,Accept-Language,Accept-Encoding,Accept-Charset,Keep-Alive,Connection,Referer,Origin");
+		
+        return builder.build();
     }
 }

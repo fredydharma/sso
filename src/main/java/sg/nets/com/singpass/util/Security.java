@@ -1,6 +1,5 @@
 package sg.nets.com.singpass.util;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,25 +11,23 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.Provider.Service;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Random;
-import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jwt.SignedJWT;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -42,14 +39,17 @@ import java.security.SignatureException;
 public class Security {
 	
 	private static final Logger logger = Logger.getLogger(Security.class);
+	
+	public Security() {		
+	}
 
-	public String decodeJwt(String accessToken, String publicKeyPath) {
+	public String decodeJwt(String accessToken, String publicCertPath) {
 	    	
     	PublicKey key = null;
     	
     	try {
 	    	CertificateFactory fact = CertificateFactory.getInstance("X.509");
-	    	FileInputStream is = new FileInputStream (publicKeyPath);
+	    	FileInputStream is = new FileInputStream (publicCertPath);
 	    	X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
 	    	key = cer.getPublicKey();
     	}catch(CertificateException e) {
@@ -58,11 +58,34 @@ public class Security {
     		e.printStackTrace();
     	}
     	
-    	logger.info(publicKeyPath);
+    	logger.info(publicCertPath);
     	logger.info(key);
     	
     	Claims body = Jwts.parser().setSigningKey(key).parseClaimsJws(accessToken).getBody();
 		return body.getSubject();
+    }
+	
+	public String decryptJWE(String jweToken,String privateKeyPath) {
+    	
+		String payload = "";
+		//decrypt JWE
+		JWEObject jweObject;
+		try {
+			jweObject = JWEObject.parse(jweToken);
+			
+			RSADecrypter decrypter = new RSADecrypter(readPrivateKey(privateKeyPath));
+	        jweObject.decrypt(decrypter);
+	        
+	        // Extract payload
+	        SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
+	        payload = signedJWT.getPayload().toJSONObject().toString();
+	        System.out.println("PersonData: "+payload);
+		}catch(Exception e) {
+			e.printStackTrace();
+	        throw new RuntimeException(e);
+		}
+		
+    	return payload;
     }
 	
 	public String generateSHA256withRSAHeader(String url, String params, String method, 
@@ -70,6 +93,11 @@ public class Security {
 	
 		long nonce = generateNonceValue();
 		long timestamp = System.currentTimeMillis();
+		
+		// Remove params unless Content-Type is "application/x-www-form-urlencoded"
+		if (method == "POST" && strContentType != "application/x-www-form-urlencoded") {
+			params = "";
+		}
 		
 		String baseString = ParameterStringBuilder.constractFormulatedBaseString(url,params, method, nonce, timestamp, appId);
 		logger.info(baseString);

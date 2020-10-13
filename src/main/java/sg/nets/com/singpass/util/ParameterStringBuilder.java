@@ -47,8 +47,10 @@ public final class ParameterStringBuilder {
     @SuppressWarnings("unchecked")
 	public static String constractFormulatedBaseString(String url,String params, String method,long nonce,long timestamp,String appId) throws JsonMappingException, JsonParseException, IOException{
     	
-    	String json = ParameterStringBuilder.paramToJson(params);		
+    	String json = ParameterStringBuilder.paramToJson(params);
 		
+    	System.out.println("JSON: "+json);
+    	
 		ObjectMapper mapper = new ObjectMapper();
 		AuthParam sortParam = mapper.readValue(json, AuthParam.class);
 		sortParam.setAppId(appId);
@@ -56,13 +58,26 @@ public final class ParameterStringBuilder {
 		sortParam.setTimestamp(timestamp);
 		sortParam.setSignatureMethod("RS256");
 		
+		System.out.println("ToString Param: "+sortParam);
+		
 		ObjectMapper objectMapper = new ObjectMapper();
 		URIBuilder ub = new URIBuilder();
         Map<String, Object> map =
                 objectMapper.convertValue(
                 		sortParam, Map.class);               
 		        
-        map.entrySet().stream().forEach(e -> ub.addParameter(e.getKey(),e.getValue().toString()));
+        map.entrySet().stream().forEach(e -> {
+        	if(method.equals("POST")) {
+        		if(!e.getKey().equals("attributes")) {
+        			ub.addParameter(e.getKey(),e.getValue().toString());
+        		}
+        	}else if(method.equals("GET")){
+        		if(!e.getKey().equals("client_secret") && !e.getKey().equals("code")
+        				&& !e.getKey().equals("grant_type") && !e.getKey().equals("redirect_uri")) {
+        			ub.addParameter(e.getKey(),e.getValue().toString());
+        		}        		
+        	}
+        });
         
         String baseString = method.toUpperCase() + "&" + url + "&" + URLDecoder.decode(ub.toString().substring(1),"UTF-8");
         

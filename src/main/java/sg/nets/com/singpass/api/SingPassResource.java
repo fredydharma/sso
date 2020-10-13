@@ -9,7 +9,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.jboss.logging.Logger;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import okhttp3.HttpUrl;
@@ -52,10 +51,11 @@ public class SingPassResource {
     		
     		logger.info("Access Token: "+authResponse.getAccess_token());
     		
-    		/*String body = security.decodeJwt(authResponse.getAccess_token(), config.getPublicCert());    		
-    		Person data = createPersonRequest(body,authResponse.getAccess_token());*/
-            builder = Response.ok(new Person());
-    	}  	    	               
+    		String body = security.decodeJwt(authResponse.getAccess_token(), config.getPublicCert());
+    		logger.info("Body: "+body);
+    		Person data = createPersonRequest(body,authResponse.getAccess_token());
+            builder = Response.ok(data);
+    	}
                 
         builder.header("Access-Control-Allow-Origin", "*");
         builder.header("Access-Control-Max-Age", "3600");
@@ -72,23 +72,42 @@ public class SingPassResource {
     	
     	try {
     		
-    		String apiPerson = properties.getProperty("MYINFO_API_PERSON")+"/"+sub+"/";
+    		String apiPerson = properties.getProperty("MYINFO_API_PERSON")+"/"+sub+"/";    		    		
     		
-    		logger.info("Attributes: "+properties.getProperty("MYINFO_ATTRIBUTES"));
+    		logger.info("CreatePersonRequest Api Person: "+apiPerson);
+    		
+    		String method = "GET";
+    		String clientId = properties.getProperty("MYINFO_APP_CLIENT_ID");
+    		String attributes = properties.getProperty("MYINFO_ATTRIBUTES");
+    		String params = "client_id="+clientId+"&attributes="+attributes;
+    		
+    		logger.info("Attributes: "+attributes);
+    		
+    		String authorization = security.generateSHA256withRSAHeader(apiPerson, params, method, "", properties.getProperty("MYINFO_APP_CLIENT_ID"), config.getPrivateKey(), properties.getProperty("MYINFO_APP_CLIENT_SECRET"),config.getPublicKey());    		    		
     		
     		HttpUrl.Builder urlBuilder = HttpUrl.parse(apiPerson).newBuilder();
-    		urlBuilder.addQueryParameter("client_id", properties.getProperty("MYINFO_APP_CLIENT_ID"));
-    		urlBuilder.addQueryParameter("attributes", properties.getProperty("MYINFO_ATTRIBUTES"));
+    		urlBuilder.addQueryParameter("client_id", clientId);
+    		urlBuilder.addQueryParameter("attributes", attributes);
     		String url = urlBuilder.build().toString();
+    		
+    		logger.info("CreatePersonRequest URL: "+url);
+    		
+    		//if not using pki digital signature
+    		//String authHeader = "Bearer "+accessToken;
+    		
+    		//if using pki digital signature
+    		String authHeader = authorization+",Bearer "+accessToken;
+    		
+    		logger.info("CreatePersonRequest Authorization: "+authHeader);
     		
     		OkHttpClient client = new OkHttpClient().newBuilder()
     			  .build();
     			Request request = new Request.Builder()
-    			  .url(url)    			  
-    			  .method("GET", null)
-    			  .addHeader("Authorization", "Bearer "+accessToken)
+    			  .url(url)
+    			  .method(method, null)
+    			  .addHeader("Authorization", authHeader)
     			  .addHeader("Cache-Control", "no-cache")
-    			  .addHeader("Content-Type", "application/json")    			  
+    			  //.addHeader("Content-Type", "application/json")
     			  .build();
     			okhttp3.Response response = client.newCall(request).execute();
     			
@@ -96,13 +115,14 @@ public class SingPassResource {
     			logger.info(person);*/
     			
     			String jsonVehicle = "\"vehicles\":[{\"roadtaxexpirydate\":{\"value\":\"2019-12-12\"},\"engineno\":{\"value\":\"M13A1837453\"},\"attachment3\":{\"value\":\"ROOF TENT\"},\"effectiveownership\":{\"value\":\"2013-05-19T12:28:19\"},\"scheme\":{\"value\":\"ROPC - REVISED OFF-PEAK CAR\"},\"powerrate\":{\"value\":1.8},\"source\":\"1\",\"primarycolour\":{\"value\":\"BLACK\"},\"type\":{\"value\":\"Station Wagon/Jeep/Land Rover\"},\"vehicleno\":{\"value\":\"SDF1235A\"},\"coeexpirydate\":{\"value\":\"2023-05-19\"},\"chassisno\":{\"value\":\"ZC11S1735800\"},\"noxemission\":{\"value\":0.015678},\"model\":{\"value\":\"KIA SEDONA\"},\"openmarketvalue\":{\"value\":17493.35},\"coemission\":{\"value\":0.135982},\"attachment2\":{\"value\":\"SUN ROOF\"},\"attachment1\":{\"value\":\"BICYCLE CARRIER\"},\"make\":{\"value\":\"KIA\"},\"pmemission\":{\"value\":0.194},\"originalregistrationdate\":{\"value\":\"2012-08-19\"},\"yearofmanufacture\":{\"value\":\"2013\"},\"vpc\":{\"value\":\"\"},\"enginecapacity\":{\"value\":1500},\"classification\":\"C\",\"nooftransfers\":{\"value\":1},\"propellant\":{\"value\":\"Petrol-Electric\"},\"co2emission\":{\"value\":155},\"motorno\":{\"value\":\"M13A1837453\"},\"minimumparfbenefit\":{\"value\":2500},\"thcemission\":{\"value\":0.198765},\"firstregistrationdate\":{\"value\":\"2013-05-19\"},\"lastupdated\":\"2020-09-10\",\"maximumunladenweight\":{\"value\":1800},\"coecategory\":{\"value\":\"C - GOODS VEHICLE & BUS\"},\"maximumladenweight\":{\"value\":2200},\"secondarycolour\":{\"value\":\"\"},\"iulabelno\":{\"value\":\"1234567890\"},\"quotapremium\":{\"value\":14000},\"status\":{\"code\":\"2\",\"desc\":\"DE-REGISTERED\"}}]";
-    			String json = FullResponseBuilder.getStrResponseContent(response.body().byteStream());
+    			String jweToken = FullResponseBuilder.getStrResponseContent(response.body().byteStream());
+    			String json = security.decryptJWE(jweToken, config.getPrivateKey());
     			json = json.substring(0,json.length()-1) + "," + jsonVehicle +"}";
     			logger.info(json);
     			
     			ObjectMapper mapper = new ObjectMapper();
     			person = mapper.readValue(json, Person.class);
-    			//logger.info(person);    			    			
+    			//logger.info(person);
     			
     	}catch(IOException e) {
     		e.printStackTrace();
@@ -120,14 +140,14 @@ public class SingPassResource {
 				+ "code="+code+"&"
 				+ "redirect_uri="+properties.getProperty("MYINFO_APP_REDIRECT_URL")+"&"
 				+ "client_id="+properties.getProperty("MYINFO_APP_CLIENT_ID")+"&"
-				+ "client_secret="+properties.getProperty("MYINFO_APP_CLIENT_SECRET");    	   
+				+ "client_secret="+properties.getProperty("MYINFO_APP_CLIENT_SECRET");
     	
     	try {
     	
     		MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
     		RequestBody body = RequestBody.create(content,mediaType);
     		
-    		String authorization = security.generateSHA256withRSAHeader(properties.getProperty("MYINFO_API_TOKEN"), content, method, "application/x-www-form-urlencoded", properties.getProperty("MYINFO_APP_CLIENT_ID"), config.getPrivateKey(), properties.getProperty("MYINFO_APP_CLIENT_SECRET"),config.getSslDir()+"\\stg-demoapp-client-publiccert-2018.pem");
+    		String authorization = security.generateSHA256withRSAHeader(properties.getProperty("MYINFO_API_TOKEN"), content, method, "application/x-www-form-urlencoded", properties.getProperty("MYINFO_APP_CLIENT_ID"), config.getPrivateKey(), properties.getProperty("MYINFO_APP_CLIENT_SECRET"),config.getPublicKey());
     		
     		OkHttpClient client = new OkHttpClient().newBuilder()
     			  .build();

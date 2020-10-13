@@ -11,6 +11,7 @@ public class Config {
 	private String sslDir;
 	private String publicCert;
 	private String privateKey;
+	private String publicKey;
 	
 	public Config() {
         properties = new Properties();
@@ -24,6 +25,7 @@ public class Config {
                     this.sslDir = jbossServerConfigDir+"\\"+properties.getProperty("SSL_DIR");
                     this.publicCert = sslDir +"\\"+properties.getProperty("MYINFO_SIGNATURE_CERT_PUBLIC_CERT");
                     this.privateKey = sslDir +"\\"+properties.getProperty("DEMO_APP_SIGNATURE_CERT_PRIVATE_KEY");
+                    this.publicKey = sslDir +"\\"+properties.getProperty("DEMO_APP_SIGNATURE_CERT_PUBLIC_KEY");
                 }
             }
         } catch (IOException e) {
@@ -57,5 +59,13 @@ public class Config {
 
 	public void setPrivateKey(String privateKey) {
 		this.privateKey = privateKey;
-	}	
+	}
+
+	public String getPublicKey() {
+		return publicKey;
+	}
+
+	public void setPublicKey(String publicKey) {
+		this.publicKey = publicKey;
+	}		
 }

@@ -13,6 +13,7 @@
             <module name="org.jetbrains.kotlin.kotlin-stdlib"/>
             <module name="com.squareup.okio.okio"/>
             <module name="commons-codec.commons-codec"/>
+            <module name="com.nimbusds.nimbus-jose-jwt"/>
         </dependencies>
     </deployment>
 </jboss-deployment-structure>
